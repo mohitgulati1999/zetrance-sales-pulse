@@ -20,6 +20,7 @@ export function SalesRecording({ onComplete }: SalesRecordingProps) {
   const [customerName, setCustomerName] = useState('');
   const [customerNumber, setCustomerNumber] = useState('');
   const [loading, setLoading] = useState(false);
+  const [startTimestamp, setStartTimestamp] = useState<string | null>(null);
   
   const recognitionRef = useRef<SpeechRecognition | null>(null);
 
@@ -66,6 +67,8 @@ export function SalesRecording({ onComplete }: SalesRecordingProps) {
 
   const startRecording = () => {
     if (recognitionRef.current) {
+      const timestamp = new Date().toISOString();
+      setStartTimestamp(timestamp);
       setIsRecording(true);
       recognitionRef.current.start();
       toast({
@@ -93,7 +96,7 @@ export function SalesRecording({ onComplete }: SalesRecordingProps) {
   };
 
   const saveSession = async () => {
-    if (!customerName || !customerNumber || !transcript) {
+    if (!customerName || !customerNumber || !transcript || !startTimestamp) {
       toast({
         title: "Missing Information",
         description: "Please fill in all fields and record some conversation.",
@@ -115,12 +118,17 @@ export function SalesRecording({ onComplete }: SalesRecordingProps) {
     }
 
     try {
+      const endTimestamp = new Date().toISOString();
+      
       const sessionData = {
         userId: user.id,
         customerName,
         customerNumber,
+        salespersonName: user.name,
+        storeName: user.storeName || '',
         transcript,
-        timestamp: new Date().toISOString(),
+        startTimestamp,
+        endTimestamp,
       };
 
       const session = await api.createSalesSession(sessionData);
@@ -135,6 +143,7 @@ export function SalesRecording({ onComplete }: SalesRecordingProps) {
       setCustomerName('');
       setCustomerNumber('');
       setTranscript('');
+      setStartTimestamp(null);
       
       onComplete?.();
     } catch (error) {
